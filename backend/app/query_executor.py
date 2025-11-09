@@ -14,12 +14,6 @@ def execute_plan(plan: Dict[str, Any], df: pd.DataFrame) -> Dict[str, Any]:
             return _execute_aggregate(df, plan)
         elif op == "compare":
             return _execute_compare(df, plan)
-        elif op == "clarify":
-            return {
-                "answer": None,
-                "explain": plan.get("question", "Could you rephrase your question?"),
-                "plan_used": plan
-            }
         else:
             return {
                 "answer": None,
@@ -37,8 +31,19 @@ def execute_plan(plan: Dict[str, Any], df: pd.DataFrame) -> Dict[str, Any]:
 def _execute_count(df: pd.DataFrame, plan: Dict[str, Any]) -> Dict[str, Any]:
     """Execute count operation with filter"""
     filter_str = plan.get("filter", "")
+    
     try:
         if filter_str:
+            # Handle string values in filter
+            if "Embarked" in filter_str:
+                # Replace 'Southampton' with 'S', 'Cherbourg' with 'C', 'Queenstown' with 'Q'
+                if "Southampton" in filter_str:
+                    filter_str = filter_str.replace("Southampton", "'S'")
+                elif "Cherbourg" in filter_str:
+                    filter_str = filter_str.replace("Cherbourg", "'C'")
+                elif "Queenstown" in filter_str:
+                    filter_str = filter_str.replace("Queenstown", "'Q'")
+            
             filtered_df = df.query(filter_str)
             count = len(filtered_df)
             return {
@@ -116,23 +121,29 @@ def _execute_compare(df: pd.DataFrame, plan: Dict[str, Any]) -> Dict[str, Any]:
         if not (target_col and group_col):
             return {
                 "answer": None,
-                "explain": "Missing column specifications for comparison",
-                "plan_used": plan
+                "explain": "Missing column specifications for comparison"
             }
-            
-        grouped = df.groupby(group_col)[target_col].mean().round(4) * 100
-        result = grouped.to_dict()
         
-        explanation = "\n".join([f"{k}: {v:.2f}%" for k, v in result.items()])
+        # Calculate survival rates by group
+        grouped = df.groupby(group_col)[target_col].mean() * 100
+        result = grouped.round(2).to_dict()
+        
+        # Format the explanation
+        rates = [f"{group}: {rate:.2f}%" for group, rate in result.items()]
+        explanation = f"Survival rates by {group_col}: " + ", ".join(rates)
+        
+        # Determine which group had higher rate
+        highest_group = max(result.items(), key=lambda x: x[1])
+        answer = f"{highest_group[0]} had the highest survival rate at {highest_group[1]:.2f}%"
         
         return {
-            "answer": result,
-            "explain": f"Comparison of {target_col} by {group_col}:\n{explanation}",
+            "answer": answer,
+            "explain": explanation,
             "plan_used": plan
         }
+        
     except Exception as e:
         return {
             "answer": None,
-            "explain": f"Error in comparison: {str(e)}",
-            "plan_used": plan
+            "explain": f"Error in comparison: {str(e)}"
         }
