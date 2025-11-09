@@ -1,0 +1,11 @@
+fastapi[standard]
+pandas
+python-multipart
+pydantic
+python-dotenv
+requests
+pytest
+google-generativeai>=0.3.0
+uvicorn
+rapidfuzz
+numpy
