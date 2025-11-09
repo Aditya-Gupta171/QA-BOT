@@ -3,6 +3,13 @@ import requests
 import pandas as pd
 from io import StringIO
 
+
+LOCAL_DEV = False
+if LOCAL_DEV:
+    BACKEND_URL = "http://localhost:8000/ask"
+else:
+    BACKEND_URL = "https://qa-bot-1-nlir.onrender.com/ask"
+
 st.set_page_config(
     page_title="Dataset Q&A Bot",
     page_icon="🤖",
@@ -12,11 +19,9 @@ st.set_page_config(
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
-    
     html, body, [class*="css"] {
         font-family: 'Montserrat', sans-serif;
     }
-    
     .stButton > button {
         background-color: black;
         color: white;
@@ -24,11 +29,9 @@ st.markdown("""
         padding: 0.5rem 1rem;
         border: none;
     }
-    
     .stButton > button:hover {
         background-color: #333;
     }
-    
     .upload-box {
         border: 2px dashed #ccc;
         padding: 2rem;
@@ -68,7 +71,7 @@ if uploaded_file:
                     
                     # Make request to FastAPI backend
                     response = requests.post(
-                        'http://localhost:8000/ask',
+                        BACKEND_URL,
                         files=files,
                         data=data
                     )
